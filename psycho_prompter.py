@@ -181,10 +181,11 @@ if st.session_state.get("logged_in", False):
                 with col2:
                     st.success(msg['content'])
 
-    prompt = st.chat_input("Escribe tu mensaje:", key="new_chat_input")
-    if prompt:
-        # Añadir mensaje del usuario al historial inmediatamente
-        st.session_state['messages'].append({"role": "user", "content": prompt})
+   # Colocar el st.chat_input fuera de cualquier contenedor para asegurarse de que se renderice antes que los botones
+prompt = st.chat_input("Escribe tu mensaje:", key="new_chat_input")
+if prompt and st.session_state.get("logged_in", False):
+    # Añadir mensaje del usuario al historial inmediatamente
+    st.session_state['messages'].append({"role": "user", "content": prompt})
         
         # Mostrar spinner mientras se espera la respuesta del bot
         with st.spinner('El bot está pensando...'):
