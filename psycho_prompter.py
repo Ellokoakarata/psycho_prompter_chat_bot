@@ -217,3 +217,8 @@ if st.session_state.get("logged_in", False):
                 del st.session_state[key]
         st.write("Sesión cerrada. ¡Gracias por usar   Psycho_Prompter_Chatbot!")
         st.rerun()
+        
+# Al final de la página
+st.write("¿Te gusta nuestra aplicación? ¡Considera apoyarnos!")
+if st.button('Donar con PayPal '):
+    st.markdown(f'<a href="https://www.paypal.com/paypalme/rdvibe?country.x=PE&locale.x=es_XC" target="_blank">Haz clic aquí para apoyarnos en PayPal</a>', unsafe_allow_html=True)
