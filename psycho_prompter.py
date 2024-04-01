@@ -146,7 +146,7 @@ if not st.session_state.get("logged_in", False):
             # Usuario nuevo, generar un nuevo UUID
             new_uuid = str(uuid.uuid4())
             st.session_state["user_uuid"] = new_uuid
-            user_doc_ref = db.collection("usuarios").document(new_uuid)
+            user_doc_ref = db.collection("usuarios_pp").document(new_uuid)
             user_doc_ref.set({"nombre": user_name, "user_uuid": new_uuid})
         st.session_state["logged_in"] = True
 
