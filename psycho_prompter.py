@@ -208,6 +208,12 @@ if st.session_state.get("logged_in", False):
         document_ref.set({'messages': st.session_state['messages']})
         st.rerun()
 
+
+# Al final de la página
+st.write("¿Te gusta nuestra aplicación? ¡Considera apoyarnos!")
+if st.button('Donar con PayPal '):
+    st.markdown(f'<a href="https://www.paypal.com/paypalme/rdvibe?country.x=PE&locale.x=es_XC" target="_blank">Haz clic aquí para apoyarnos en PayPal</a>', unsafe_allow_html=True)
+
 # Gestión del Cierre de Sesión
 if st.session_state.get("logged_in", False):
     if st.button("Cerrar Sesión"):
@@ -218,7 +224,3 @@ if st.session_state.get("logged_in", False):
         st.write("Sesión cerrada. ¡Gracias por usar   Psycho_Prompter_Chatbot!")
         st.rerun()
         
-# Al final de la página
-st.write("¿Te gusta nuestra aplicación? ¡Considera apoyarnos!")
-if st.button('Donar con PayPal '):
-    st.markdown(f'<a href="https://www.paypal.com/paypalme/rdvibe?country.x=PE&locale.x=es_XC" target="_blank">Haz clic aquí para apoyarnos en PayPal</a>', unsafe_allow_html=True)
