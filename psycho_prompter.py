@@ -40,6 +40,7 @@ client = OpenAI(api_key=api_key)
 
 
 
+
 with st.sidebar:
     st.write("   Psycho_Prompter_Chatbot 🤖 IA + Desarrollo y creatividad")
     st.write("Se encuentra en etapa de prueba.")
