@@ -167,7 +167,7 @@ if st.session_state.get("logged_in", False):
         st.session_state['messages'] = doc_data['messages']
     
     with st.container(border=True):
-        st.markdown("### Historial de Conversación")
+        st.markdown("### Conversación")
         for msg in st.session_state['messages']:
             col1, col2 = st.columns([1, 5])
             if msg["role"] == "user":
