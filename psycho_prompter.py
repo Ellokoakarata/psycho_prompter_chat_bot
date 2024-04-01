@@ -37,11 +37,6 @@ db = firestore.client()
 api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=api_key)
 
-# Display logo
-logo_url= 'https://firebasestorage.googleapis.com/v0/b/diario-ad840.appspot.com/o/c8d5e737-bd01-40b0-8c9f-721d5f123f91.webp?alt=media&token=d01aeeac-48a2-41ca-82c4-ca092946bbc9'
-st.image(logo_url, use_column_width=True)
-
-
 
 
 
@@ -167,7 +162,7 @@ if st.session_state.get("logged_in", False):
         st.session_state['messages'] = doc_data['messages']
     
     with st.container(border=True):
-        st.markdown("### Conversación")
+        st.markdown("### Historial de Conversación")
         for msg in st.session_state['messages']:
             col1, col2 = st.columns([1, 5])
             if msg["role"] == "user":
@@ -217,4 +212,3 @@ if st.session_state.get("logged_in", False):
                 del st.session_state[key]
         st.write("Sesión cerrada. ¡Gracias por usar   Psycho_Prompter_Chatbot!")
         st.rerun()
-        
