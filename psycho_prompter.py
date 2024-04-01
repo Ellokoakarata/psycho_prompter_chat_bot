@@ -186,6 +186,7 @@ if st.session_state.get("logged_in", False):
     if prompt and st.session_state.get("logged_in", False):
     # Añadir mensaje del usuario al historial inmediatamente
         st.session_state['messages'].append({"role": "user", "content": prompt})
+        st.rerun()
         
         # Mostrar spinner mientras se espera la respuesta del bot
         with st.spinner('El bot está pensando...'):
