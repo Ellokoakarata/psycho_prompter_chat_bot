@@ -135,37 +135,16 @@ document_name = st.session_state.get("user_uuid", str(uuid.uuid4()))
 collection_ref = db.collection(collection_name)
 document_ref = collection_ref.document(document_name)
 
-# Gestión del Inicio de Sesión
-if not st.session_state.get("logged_in", False):
-    user_name = st.text_input("Introduce tu nombre para comenzar")
-    confirm_button = st.button("Confirmar")
-    if confirm_button and user_name:
-        # Buscar en Firestore si el nombre de usuario ya existe
-        user_query = db.collection("usuarios_pp").where("nombre", "==", user_name).get()
-        if user_query:
-            # Usuario existente encontrado, usar el UUID existente
-            user_info = user_query[0].to_dict()
-            st.session_state["user_uuid"] = user_info["user_uuid"]
-            st.session_state["user_name"] = user_name
-        else:
-            # Usuario nuevo, generar un nuevo UUID
-            new_uuid = str(uuid.uuid4())
-            st.session_state["user_uuid"] = new_uuid
-            user_doc_ref = db.collection("usuarios").document(new_uuid)
-            user_doc_ref.set({"nombre": user_name, "user_uuid": new_uuid})
-        st.session_state["logged_in"] = True
-
-        # Forzar a Streamlit a reejecutar el script
-        st.rerun()
-
 # Solo mostrar el historial de conversación y el campo de entrada si el usuario está "logged_in"
 if st.session_state.get("logged_in", False):
     st.write(f"Bienvenido de nuevo, {st.session_state.get('user_name', 'Usuario')}!")
     
+    # Obtener datos del documento en Firestore y actualizar el estado de los mensajes
     doc_data = document_ref.get().to_dict()
     if doc_data and 'messages' in doc_data:
         st.session_state['messages'] = doc_data['messages']
     
+    # Mostrar el historial de conversación
     with st.container(border=True):
         st.markdown("### Conversación")
         for msg in st.session_state['messages']:
@@ -181,6 +160,7 @@ if st.session_state.get("logged_in", False):
                 with col2:
                     st.success(msg['content'])
 
+    # Campo de entrada para enviar un nuevo mensaje
     prompt = st.chat_input("Escribe tu mensaje:", key="new_chat_input")
     if prompt:
         # Añadir mensaje del usuario al historial inmediatamente
@@ -193,6 +173,7 @@ if st.session_state.get("logged_in", False):
             internal_prompt += "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state['messages'][-5:]])
             internal_prompt += f"\n\n{user_name}: {prompt}"
 
+            # Llamada a la API de OpenAI para obtener la respuesta del bot
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo-1106",
                 messages=[{"role": "system", "content": internal_prompt}],
@@ -211,14 +192,15 @@ if st.session_state.get("logged_in", False):
 # Gestión del Cierre de Sesión
 if st.session_state.get("logged_in", False):
     if st.button("Cerrar Sesión"):
-        keys_to_keep = []
+        # Limpiar los datos de la sesión
         for key in list(st.session_state.keys()):
             if key not in keys_to_keep:
                 del st.session_state[key]
-        st.write("Sesión cerrada. ¡Gracias por usar   Psycho_Prompter_Chatbot!")
+        st.write("Sesión cerrada. ¡Gracias por usar Psycho_Prompter_Chatbot!")
         st.rerun()
-        
-# Al final de la página
+
+# Botón de donación, colocado al final
 st.write("¿Te gusta nuestra aplicación? ¡Considera apoyarnos!")
-if st.button('Donar con PayPal '):
+if st.button('Donar con PayPal'):
     st.markdown(f'<a href="https://www.paypal.com/paypalme/rdvibe?country.x=PE&locale.x=es_XC" target="_blank">Haz clic aquí para apoyarnos en PayPal</a>', unsafe_allow_html=True)
+
