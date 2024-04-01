@@ -120,7 +120,7 @@ Anarchist artist in a moment of creative epiphany, where punk, hippie, rasta, an
 
 # Inicializar st.session_state
 if "user_uuid" not in st.session_state:
-    st.session_state["user_uuid"] = None
+    st.session_state["user_uuid"] = None  # Cambiado a None inicialmente
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 if "logged_in" not in st.session_state:
@@ -136,32 +136,37 @@ collection_ref = db.collection(collection_name)
 document_ref = collection_ref.document(document_name)
 
 # Gestión del Inicio de Sesión
-if not st.session_state["logged_in"]:
+if not st.session_state.get("logged_in", False):
     user_name = st.text_input("Introduce tu nombre para comenzar")
     confirm_button = st.button("Confirmar")
     if confirm_button and user_name:
+        # Buscar en Firestore si el nombre de usuario ya existe
         user_query = db.collection("usuarios_pp").where("nombre", "==", user_name).get()
         if user_query:
+            # Usuario existente encontrado, usar el UUID existente
             user_info = user_query[0].to_dict()
             st.session_state["user_uuid"] = user_info["user_uuid"]
             st.session_state["user_name"] = user_name
         else:
+            # Usuario nuevo, generar un nuevo UUID
             new_uuid = str(uuid.uuid4())
             st.session_state["user_uuid"] = new_uuid
             user_doc_ref = db.collection("usuarios").document(new_uuid)
             user_doc_ref.set({"nombre": user_name, "user_uuid": new_uuid})
         st.session_state["logged_in"] = True
+
+        # Forzar a Streamlit a reejecutar el script
         st.rerun()
 
 # Solo mostrar el historial de conversación y el campo de entrada si el usuario está "logged_in"
 if st.session_state.get("logged_in", False):
-    st.write(f"Bienvenido de nuevo, {st.session_state.get('user_name', 'Usuario')}")
+    st.write(f"Bienvenido de nuevo, {st.session_state.get('user_name', 'Usuario')}!")
     
     doc_data = document_ref.get().to_dict()
     if doc_data and 'messages' in doc_data:
         st.session_state['messages'] = doc_data['messages']
-
-    with st.container():
+    
+    with st.container(border=True):
         st.markdown("### Conversación")
         for msg in st.session_state['messages']:
             col1, col2 = st.columns([1, 5])
@@ -178,10 +183,12 @@ if st.session_state.get("logged_in", False):
 
     prompt = st.chat_input("Escribe tu mensaje:", key="new_chat_input")
     if prompt:
+        # Añadir mensaje del usuario al historial inmediatamente
         st.session_state['messages'].append({"role": "user", "content": prompt})
         
+        # Mostrar spinner mientras se espera la respuesta del bot
         with st.spinner('El bot está pensando...'):
-            user_name = st.session_state["user_name"]
+            user_name = st.session_state.get("user_name", "Usuario desconocido")
             internal_prompt = system_message + "\n\n"
             internal_prompt += "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state['messages'][-5:]])
             internal_prompt += f"\n\n{user_name}: {prompt}"
@@ -192,22 +199,26 @@ if st.session_state.get("logged_in", False):
                 max_tokens=2000,
                 temperature=0.80,
             )
-            
-            generated_text = response.choices[0].message.content
-            st.session_state['messages'].append({"role": "assistant", "content": generated_text})
-            document_ref.set({'messages': st.session_state['messages']})
-            st.rerun()
+        
+        # La respuesta del bot se obtiene después de cerrar el spinner
+        generated_text = response.choices[0].message.content
+        
+        # Añadir respuesta del bot al historial de mensajes
+        st.session_state['messages'].append({"role": "assistant", "content": generated_text})
+        document_ref.set({'messages': st.session_state['messages']})
+        st.rerun()
 
 # Gestión del Cierre de Sesión
 if st.session_state.get("logged_in", False):
     if st.button("Cerrar Sesión"):
+        keys_to_keep = []
         for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.write("Sesión cerrada. ¡Gracias por usar Psycho_Prompter_Chatbot!")
+            if key not in keys_to_keep:
+                del st.session_state[key]
+        st.write("Sesión cerrada. ¡Gracias por usar   Psycho_Prompter_Chatbot!")
         st.rerun()
-
-# Botón de donación, colocado al final
+        
+# Al final de la página
 st.write("¿Te gusta nuestra aplicación? ¡Considera apoyarnos!")
-if st.button('Donar con PayPal'):
+if st.button('Donar con PayPal '):
     st.markdown(f'<a href="https://www.paypal.com/paypalme/rdvibe?country.x=PE&locale.x=es_XC" target="_blank">Haz clic aquí para apoyarnos en PayPal</a>', unsafe_allow_html=True)
-
