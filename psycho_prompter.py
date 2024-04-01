@@ -198,5 +198,5 @@ if st.session_state.get("logged_in", False):
                 del st.session_state[key]
         st.session_state["logged_in"] = False
         st.write("Sesión cerrada. ¡Gracias por usar Psycho_Prompter_Chatbot!")
-        st.experimental_rerun()
+        st.rerun()
 
