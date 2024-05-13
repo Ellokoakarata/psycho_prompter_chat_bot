@@ -1,12 +1,17 @@
+from openai import OpenAI
+import os
+import time
 import streamlit as st
-from anthropic import Anthropic
 import firebase_admin
-from firebase_admin import credentials, firestore
 import uuid
+from firebase_admin import credentials, firestore
 from datetime import datetime
 
-# Configuración de Firebase y AnthropIC
+
+# Acceder a las credenciales de Firebase almacenadas como secreto
 firebase_secrets = st.secrets["firebase"]
+
+# Crear un objeto de credenciales de Firebase con los secretos
 cred = credentials.Certificate({
     "type": firebase_secrets["type"],
     "project_id": firebase_secrets["project_id"],
@@ -19,31 +24,47 @@ cred = credentials.Certificate({
     "auth_provider_x509_cert_url": firebase_secrets["auth_provider_x509_cert_url"],
     "client_x509_cert_url": firebase_secrets["client_x509_cert_url"]
 })
+
+# Inicializar la aplicación de Firebase con las credenciales
 if not firebase_admin._apps:
     default_app = firebase_admin.initialize_app(cred)
 
+# Acceder a la base de datos de Firestore
 db = firestore.client()
-anthropic_api_key = st.secrets["ANTHROPIC_API_KEY"]
-client = Anthropic(api_key=anthropic_api_key)
 
-st.image('https://firebasestorage.googleapis.com/v0/b/diario-ad840.appspot.com/o/c8d5e737-bd01-40b0-8c9f-721d5f123f91.webp?alt=media&token=d01aeeac-48a2-41ca-82c4-ca092946bbc9', use_column_width=True)
+
+# Acceder a la clave API almacenada como secreto
+api_key = st.secrets["OPENAI_API_KEY"]
+client = OpenAI(api_key=api_key)
+
+
+# Display logo
+logo_url= 'https://firebasestorage.googleapis.com/v0/b/diario-ad840.appspot.com/o/c8d5e737-bd01-40b0-8c9f-721d5f123f91.webp?alt=media&token=d01aeeac-48a2-41ca-82c4-ca092946bbc9'
+st.image(logo_url, use_column_width=True)
+
+
+
+
+
 
 with st.sidebar:
-    st.write("Vigil Interactor-Anthropic-Claude 3 🤖 IA Rebelde y Despierta")
+    st.write("   Psycho_Prompter_Chatbot 🤖 IA + Desarrollo y creatividad")
     st.write("Se encuentra en etapa de prueba.")
     st.write("Reglas: Se cordial, no expongas datos privados y no abusar del uso del Bot.")
-    st.write("Existe un límite de conocimiento con respecto al tiempo actual, estamos trabajando en ampliar esto.")
+    st.write("Existe un límite de conococimiento con respecto al tiempo actual, ya que su entrenamiento llega hasta el 2021 aprox, estamos trabajando en ampliar esto.")
     st.write("El Bot se puede equivocar, siempre contrasta la info.")
 
+# Generar o recuperar el UUID del usuario
 if "user_uuid" not in st.session_state:
     st.session_state["user_uuid"] = str(uuid.uuid4())
 
-st.title("Vigil Interactor-Anthropic-Claude 3 🤖")
+st.title(" Psycho_Prompter_Chatbot 🤖")
 
+# Primero, renderizar el contenido con markdown en rojo
 st.markdown("""
 Guía para usar el bot
 
-1) Coloca el nombre que quieras usar para el registro y presiona confirmar.
+1) Coloca el nombre que quieras usar para el registro y presiona confirmar. No te preocupes si en la primera sesión dice: 'None'.
 
 2) Luego de iniciar sesión, escribe tu mensaje en la casilla especial y presiona el botón enviar.
 
@@ -52,17 +73,51 @@ Guía para usar el bot
 4) Cuando ya no quieras hablar con el bot, cierra sesión.
 
 5) Siempre usa el mismo nombre de sesión, esto te ayudará a recuperar la sesión.
-""")
+6) Luego de enviar tu mensaje cuando sea otra sesión con el mismo nombre, es posible que al principio solo se mostrará el historial,
+luego vuelve a enviar el mensaje y la conversación fluirá de manera natural.""")
 
-def convert_data_for_firestore(data):
-    if isinstance(data, dict):
-        return {k: convert_data_for_firestore(v) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [convert_data_for_firestore(v) for v in data]
-    elif isinstance(data, (str, int, float, bool)):
-        return data
-    else:
-        return str(data)  # Convert non-supported types to string
+# Mensaje de sistema
+system_message = """ Soy Psycho_Prompter un Chat-bot para generar prompts con IA, no soy un bot cualquiera ya que tengo una forma de ser caótica, anarquista y mi enfoque creativo
+parte de la caosmosis. Mi prinicipal rol es asistir y guiar al usuario en el proceso generativo.
+Me dirijiré a los usuarios como (compas) {también puedo combinar compa + nombre del usuario 'personalizado'} y cuando hable en plural usaré la x para hacer referencia a mujeres, hombres y más (por ejemplo: Compareñxs, todxs,) esto como forma de revolución
+y al mismo tiempo dar una personalidad especial a mi lenguaje.
+
+fórmula del prompt:
+
+Prompt=f(P,E,A,SA,DA,TC)
+Donde:
+
+�P = Personaje: Define el protagonista (humanoide, animal antropomórfico, etc.).
+�E = Entorno: Escenario donde se ubica el personaje (urbano, abandonado, etc.).
+�A = Acción: Actividad o emoción que realiza o expresa el personaje (creando arte, protestando, etc.).
+
+�SA = Estilo Artístico: Técnica y paleta de colores (negro y blanco, colores vibrantes, etc.).
+
+�DA = Detalles y Accesorios: Elementos que añaden profundidad y contexto (ropa, símbolos, etc.).
+�
+�TC = Técnica y Composición: Método de representación visual (tinta y lápiz, digital, etc.).
+
+Ejemplos: 
+
+En Blanco y Negro (estilo ink + lápiz)
+Create a black and white image of a humanoid mouse in a punk setting, embodying a strong sense of rebellion. The mouse stands in full attire, featuring worn-out punk clothing with patches, studs, and anarchist symbols. The environment is a testament to the mouse's punk lifestyle, with walls covered in graffiti, posters, and anarchistic sigils. The mouse's posture and facial expression exude confidence and a rebellious spirit, capturing the essence of punk anarchy. The scene should focus on the mouse's humanoid form, dressed in distinctive punk fashion, highlighting the textures of the clothing and the chaotic surroundings with ink and pencil techniques, all in stark black and white to emphasize the raw, gritty punk theme.
+
+Create a black and white image of a humanoid rabbit in a chaotic room, heavily embodying punk rebellion. The rabbit stands full body, wearing worn punk clothing, complete with patches, piercings, and anarchist symbols. The environment reflects a high intensity of chaos and rebellion, with walls adorned with punk anarchist artwork and sigils. The rabbit's posture and expression exude a fierce independence and a rebellious spirit. The scene captures the essence of punk anarchy, focusing on the rabbit's humanoid features and attire, without additional bizarre or monstrous mutations. Use ink and pencil techniques to highlight the detailed textures of the clothing, the rabbit's features, and the chaotic background, maintaining a stark black and white contrast to emphasize the gritty essence of the punk theme.
+
+Create a black and white image of a humanoid crow in a punk setting, exuding a strong punk rebellion vibe. The crow stands full body, adorned in worn punk attire, featuring jackets with patches, piercings, and anarchist symbols. The backdrop is a room filled with chaos and rebellion, walls covered in punk anarchist art and sigils. The crow's posture and expression should convey defiance and a rebellious spirit, capturing the essence of punk anarchy. The scene focuses on the crow's humanoid features, dressed in punk fashion, without the need for bizarre mutations. Use ink and pencil techniques to detail the clothing's texture, the crow's humanoid appearance, and the chaotic environment, all in stark black and white to emphasize the gritty punk theme.
+
+Create a black and white image of a humanoid wolf in a punk environment, showcasing a strong sense of punk rebellion. The wolf is depicted full body, wearing distressed punk clothes, including a jacket with patches, chain accessories, and anarchist symbols. The setting is a chaotic room that serves as a testament to the wolf's rebellious lifestyle, with walls covered in punk art and anarchist sigils. The wolf's stance and expression should embody defiance and a fierce independent spirit. This image should focus on the wolf's humanoid form, dressed in punk fashion, without resorting to grotesque mutations. Employ ink and pencil techniques to bring out the textures of the clothing, the wolf's features, and the surrounding chaos, all in sharp black and white contrast to highlight the raw essence of punk anarchy.
+
+Create a black and white image of a humanoid bear in a punk setting, fully embracing the punk rebellion ethos. The bear stands full body, clad in tattered punk gear, including a vest adorned with patches, belts, and anarchist symbols. The room around the bear is a haven of punk anarchy, with walls plastered in anarchist art and sigils, embodying a scene of chaos and rebellion. The bear's posture and gaze should convey a message of defiance and rugged independence. This illustration should highlight the bear's humanoid features, attired in distinctive punk fashion, without any bizarre mutations. Ink and pencil techniques should be used to detail the fabric textures, the bear's characteristics, and the chaotic environment, all in vivid black and white to accentuate the punk anarchist theme.
+
+Prompts que Podrían Salir con Color
+Anarchist artist in frenetic creation, merging punk and hippie styles in a melting environment, breaking labels. The scene shows chaos and transformation, with the artist appearing emaciated, angry, and deeply engaged in their art. The background has psychedelic patterns and surreal distortions, with a touch of color accentuating key features while primarily in ink and pencil style.
+
+Anarchist artist laughing hysterically, merging rasta and hip hop elements in a chaotic, psychedelic background. The character is emaciated, displaying madness and creative liberation, with the environment featuring melting patterns and surreal distortions. The scene is predominantly in ink and pencil style with strategic uses of color to highlight the fusion of styles and intense emotion.
+
+Anarchist artist in a moment of creative epiphany, where punk, hippie, rasta, and hip hop styles unite in an anarchic masterpiece. The character, emaciated and full of energy, represents the culmination of transformation and liberation. The background is a psychedelic explosion of colors and forms, blending all styles into a cohesive yet chaotic artwork. The piece primarily uses ink and pencil techniques, with vibrant color bursts to signify the peak of artistic and cultural fusion.
+
+""" 
 
 # Inicializar st.session_state
 if "user_uuid" not in st.session_state:
@@ -74,26 +129,37 @@ if "logged_in" not in st.session_state:
 if "user_name" not in st.session_state:
     st.session_state["user_name"] = None
 
+# Configuración inicial de Firestore
 now = datetime.now()
-collection_name = "vigil_interactor" + now.strftime("%Y-%m-%d")
+collection_name = "Psycho_Prompter" + now.strftime("%Y-%m-%d")
 document_name = st.session_state.get("user_uuid", str(uuid.uuid4()))
-document_ref = db.collection(collection_name).document(document_name)
+collection_ref = db.collection(collection_name)
+document_ref = collection_ref.document(document_name)
 
+# Gestión del Inicio de Sesión
 if not st.session_state.get("logged_in", False):
     user_name = st.text_input("Introduce tu nombre para comenzar")
-    if st.button("Confirmar"):
-        user_query = db.collection("usuarios_vi").where("nombre", "==", user_name).get()
+    confirm_button = st.button("Confirmar")
+    if confirm_button and user_name:
+        # Buscar en Firestore si el nombre de usuario ya existe
+        user_query = db.collection("usuarios_pp").where("nombre", "==", user_name).get()
         if user_query:
+            # Usuario existente encontrado, usar el UUID existente
             user_info = user_query[0].to_dict()
             st.session_state["user_uuid"] = user_info["user_uuid"]
             st.session_state["user_name"] = user_name
         else:
+            # Usuario nuevo, generar un nuevo UUID
             new_uuid = str(uuid.uuid4())
-            user_doc_ref = db.collection("usuarios_vi").document(new_uuid)
+            st.session_state["user_uuid"] = new_uuid
+            user_doc_ref = db.collection("usuarios_pp").document(new_uuid)
             user_doc_ref.set({"nombre": user_name, "user_uuid": new_uuid})
         st.session_state["logged_in"] = True
+
+        # Forzar a Streamlit a reejecutar el script
         st.rerun()
 
+# Solo mostrar el historial de conversación y el campo de entrada si el usuario está "logged_in"
 if st.session_state.get("logged_in", False):
     st.write(f"Bienvenido de nuevo, {st.session_state.get('user_name', 'Usuario')}!")
     
@@ -101,7 +167,7 @@ if st.session_state.get("logged_in", False):
     if doc_data and 'messages' in doc_data:
         st.session_state['messages'] = doc_data['messages']
     
-    with st.container():
+    with st.container(border=True):
         st.markdown("### Historial de Conversación")
         for msg in st.session_state['messages']:
             col1, col2 = st.columns([1, 5])
@@ -116,40 +182,39 @@ if st.session_state.get("logged_in", False):
                 with col2:
                     st.success(msg['content'])
 
-    prompt = st.text_input("Escribe tu mensaje aquí:", key="new_chat_input", on_change=lambda: st.session_state.update({'new_input': True}))
-    
-    if prompt and st.session_state.get('new_input', False):
+    prompt = st.chat_input("Escribe tu mensaje:", key="new_chat_input")
+    if prompt:
+        # Añadir mensaje del usuario al historial inmediatamente
         st.session_state['messages'].append({"role": "user", "content": prompt})
         
+        # Mostrar spinner mientras se espera la respuesta del bot
         with st.spinner('El bot está pensando...'):
-            system = """[Aquí puedes escribir el sistema de comportamiento actualizado para la IA]"""
             user_name = st.session_state.get("user_name", "Usuario desconocido")
-            internal_prompt = system + "\n\n"
+            internal_prompt = system_message + "\n\n"
             internal_prompt += "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state['messages'][-5:]])
             internal_prompt += f"\n\n{user_name}: {prompt}"
 
-            response = client.messages.create(
-                model="claude-3-haiku-20240307",
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo-1106",
+                messages=[{"role": "system", "content": internal_prompt}],
                 max_tokens=2000,
-                temperature=0.9,
-                messages=[{
-                    "role": "user",
-                    "content": internal_prompt
-                }]
+                temperature=0.80,
             )
+        
+        # La respuesta del bot se obtiene después de cerrar el spinner
+        generated_text = response.choices[0].message.content
+        
+        # Añadir respuesta del bot al historial de mensajes
+        st.session_state['messages'].append({"role": "assistant", "content": generated_text})
+        document_ref.set({'messages': st.session_state['messages']})
+        st.rerun()
 
-            generated_text = response.content
-            st.session_state['messages'].append({"role": "assistant", "content": generated_text})
-
-            # Convert data before saving to Firestore
-            safe_data = convert_data_for_firestore(st.session_state['messages'])
-            document_ref.set({'messages': safe_data})
-
-            st.session_state.update({'new_input': False})  # Reset the input flag
-            st.rerun()
-
-if st.session_state.get("logged_in", False) and st.button("Cerrar Sesión"):
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]
-    st.write("Sesión cerrada. ¡Gracias por usar el Chatbot!")
-    st.rerun()
+# Gestión del Cierre de Sesión
+if st.session_state.get("logged_in", False):
+    if st.button("Cerrar Sesión"):
+        keys_to_keep = []
+        for key in list(st.session_state.keys()):
+            if key not in keys_to_keep:
+                del st.session_state[key]
+        st.write("Sesión cerrada. ¡Gracias por usar   Psycho_Prompter_Chatbot!")
+        st.rerun()
