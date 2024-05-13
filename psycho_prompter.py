@@ -207,8 +207,7 @@ if st.session_state.get("logged_in", False):
         # Añadir respuesta del bot al historial de mensajes
         st.session_state['messages'].append({"role": "assistant", "content": generated_text})
         document_ref.set({'messages': st.session_state['messages']})
-        st.rerun()
-
+      
 # Gestión del Cierre de Sesión
 if st.session_state.get("logged_in", False):
     if st.button("Cerrar Sesión"):
